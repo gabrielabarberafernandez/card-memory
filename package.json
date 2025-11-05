@@ -1,0 +1,16 @@
+{
+  "name": "card-memory",
+  "version": "1.0.0",
+  "description": "Juego de memoria con cartas (TypeScript + JS)",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "live-server public"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "live-server": "^1.2.2"
+  }
+}

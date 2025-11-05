@@ -1,0 +1,28 @@
+<!DOCTYPE html> 
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="../dist/index.js" type="module" async></script>
+  <link rel="stylesheet" href="./styles/style.css">
+  <title>Card Memory</title>
+</head>
+<body>
+  <div class="game">
+    <div id="board" class="board"></div>
+
+    <div class="hud">
+      <label for="level">Nivel:</label>
+      <select id="level">
+        <option value="8">Fácil (8 cartas)</option>
+        <option value="12" selected>Medio (12 cartas)</option>
+        <option value="16">Difícil (16 cartas)</option>
+      </select>
+
+      <p>Intentos: <span id="tries">0</span></p>
+      <p>Tiempo: <span id="time">0:00</span></p>
+      <button id="restart">🔁 Reiniciar</button>
+    </div>
+  </div>
+</body>
+</html>
