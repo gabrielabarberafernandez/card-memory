@@ -1,28 +1,54 @@
-<!DOCTYPE html> 
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="../dist/index.js" type="module" async></script>
-  <link rel="stylesheet" href="./styles/style.css">
-  <title>Card Memory</title>
-</head>
-<body>
-  <div class="game">
-    <div id="board" class="board"></div>
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="../dist/index.js" type="module" async></script>
+    <link rel="stylesheet" href="./styles/style.css" />
+    <title>Card Memory</title>
+  </head>
 
-    <div class="hud">
-      <label for="level">Nivel:</label>
-      <select id="level">
-        <option value="8">Fácil (8 cartas)</option>
-        <option value="12" selected>Medio (12 cartas)</option>
-        <option value="16">Difícil (16 cartas)</option>
-      </select>
-
-      <p>Intentos: <span id="tries">0</span></p>
-      <p>Tiempo: <span id="time">0:00</span></p>
-      <button id="restart">🔁 Reiniciar</button>
+  <body>
+    <!-- 🎵 Pantalla de inicio -->
+    <div id="start-screen" class="start-screen">
+      <h1>🎴 Card Memory</h1>
+      <p>¡Pon a prueba tu memoria y diviértete!</p>
+      <button id="start-btn">🎮 Jugar</button>
     </div>
-  </div>
-</body>
+
+    <!-- 🎲 Juego -->
+    <div id="game" class="game hidden">
+      <div class="hud">
+        <label for="level">Nivel:</label>
+        <select id="level">
+          <option value="easy">Fácil</option>
+          <option value="medium" selected>Medio</option>
+          <option value="hard">Difícil</option>
+        </select>
+
+        <p>Intentos: <span id="tries">0</span></p>
+        <p>Tiempo: <span id="time">0:00</span></p>
+        <button id="restart">🔁 Reiniciar</button>
+        <button id="sound-btn" class="sound-btn">🔊</button>
+      </div>
+
+      <div id="board" class="board"></div>
+
+      <section id="ranking" class="ranking">
+        <h2>🏆 Mejores puntuaciones</h2>
+        <ul id="ranking-list"></ul>
+      </section>
+    </div>
+
+    <!-- 🎵 Archivos de sonido -->
+    <audio id="bg-music" loop>
+      <source src="./sounds/bg-music.mp3" type="audio/mpeg" />
+    </audio>
+    <audio id="flip-sound">
+      <source src="./sounds/flip.mp3" type="audio/mpeg" />
+    </audio>
+    <audio id="win-sound">
+      <source src="./sounds/win.mp3" type="audio/mpeg" />
+    </audio>
+  </body>
 </html>
