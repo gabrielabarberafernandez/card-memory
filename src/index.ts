@@ -10,54 +10,85 @@ const restartBtn = document.getElementById("restart") as HTMLButtonElement;
 const triesEl = document.getElementById("tries") as HTMLElement;
 const timeEl = document.getElementById("time") as HTMLElement;
 const levelSelect = document.getElementById("level") as HTMLSelectElement;
-
+const soundBtn = document.getElementById("sound-btn") as HTMLButtonElement;
+const volumeSlider = document.getElementById("volume-slider") as HTMLInputElement;
 
 // Pantalla de inicio
 const startScreen = document.getElementById("start-screen") as HTMLElement;
 const startBtn = document.getElementById("start-btn") as HTMLButtonElement;
 const gameSection = document.getElementById("game") as HTMLElement;
 
-// Sonido
-const bgMusic = document.getElementById("bg-music") as HTMLAudioElement;
-const flipSound = document.getElementById("flip-sound") as HTMLAudioElement;
-const winSound = document.getElementById("win-sound") as HTMLAudioElement;
-const soundBtn = document.getElementById("sound-btn") as HTMLButtonElement;
+// ------------------------------
+// 🎵 SONIDOS (rutas corregidas)
+// ------------------------------
+const flipSound = new Audio("./sounds/flip.mp3");
+const matchSound = new Audio("./sounds/match.mp3");
+const winSound = new Audio("./sounds/win.mp3");
+const bgMusic = new Audio("./sounds/bg.mp3");
+
+bgMusic.loop = true;
+
 let soundEnabled = true;
 
-// Mostrar el juego y reproducir música
+// Evitar solapamientos
+flipSound.preload = "auto";
+matchSound.preload = "auto";
+winSound.preload = "auto";
+bgMusic.preload = "auto";
+
+// ------------------------------
+// Funciones de sonido
+// ------------------------------
+function playSound(sound: HTMLAudioElement) {
+  if (!soundEnabled) return;
+  sound.currentTime = 0;
+  sound.play().catch(() => {});
+}
+
+function playFlip() {
+  playSound(flipSound);
+}
+
+function playMatch() {
+  playSound(matchSound);
+}
+
+function playWin() {
+  playSound(winSound);
+}
+
+// ------------------------------
+// Iniciar el juego desde la pantalla inicial
+// ------------------------------
 startBtn.addEventListener("click", () => {
   startScreen.classList.add("hidden");
   gameSection.classList.remove("hidden");
-  if (soundEnabled) bgMusic.play();
+
+  // 🔊 Solo reproducir música después de interacción del usuario
+  if (soundEnabled) bgMusic.play().catch(() => {});
 });
 
-// Botón de sonido
+// ------------------------------
+// SONIDO ON/OFF
+// ------------------------------
 soundBtn.addEventListener("click", () => {
   soundEnabled = !soundEnabled;
   soundBtn.textContent = soundEnabled ? "🔊" : "🔇";
-  if (soundEnabled) {
-    bgMusic.play();
-  } else {
-    bgMusic.pause();
-  }
+
+  if (soundEnabled) bgMusic.play().catch(() => {});
+  else bgMusic.pause();
 });
 
-// Ejemplo: reproducir efectos dentro del juego
-function playFlipSound() {
-  if (soundEnabled) flipSound.play();
-}
-
-function playWinSound() {
-  if (soundEnabled) winSound.play();
-}
-
-
-// Mostrar juego y ocultar menú al hacer clic
-startBtn.addEventListener("click", () => {
-  startScreen.classList.add("hidden");
-  gameSection.classList.remove("hidden");
+// ------------------------------
+// SLIDER DE VOLUMEN
+// ------------------------------
+volumeSlider.addEventListener("input", () => {
+  const v = Number(volumeSlider.value);
+  flipSound.volume = v;
+  matchSound.volume = v;
+  winSound.volume = v;
+  bgMusic.volume = v;
 });
-
 
 // Tipos
 interface Card {
@@ -92,7 +123,7 @@ let startTime: number | null = null;
 let remainingTime: number = level.timeLimit;
 let score: number = 0;
 
-// Lista de íconos
+// Iconos
 const ICONS: string[] = [
   "♠", "♥", "♦", "♣", "★", "♪", "☼", "✿",
   "☺", "⚡", "☯", "✈︎", "⚽", "🍀", "🐱", "🐶"
@@ -115,6 +146,7 @@ function startTimer(): void {
     if (!startTime) return;
     const elapsed = Math.floor((Date.now() - startTime) / 1000);
     remainingTime = level.timeLimit - elapsed;
+
     if (remainingTime <= 0) {
       stopTimer();
       alert("⏰ ¡Se acabó el tiempo! Inténtalo de nuevo.");
@@ -151,7 +183,6 @@ function resetGame(): void {
   matchedCount = 0;
   boardEl.innerHTML = "";
 
-  // Obtener nivel actual
   levelKey = levelSelect.value as keyof typeof LEVELS;
   level = LEVELS[levelKey];
   remainingTime = level.timeLimit;
@@ -168,7 +199,6 @@ function initBoard(numCards: number): void {
   shuffle(deck);
   cards = deck.map((val, idx) => ({ id: idx, value: val, matched: false }));
 
-  // Ajustar columnas según nivel
   boardEl.className = "board";
   const cols = numCards <= 8 ? 3 : numCards <= 12 ? 4 : 5;
   boardEl.classList.add(`board--cols-${cols}`);
@@ -194,12 +224,14 @@ function onCardClick(card: Card, el: HTMLElement): void {
   if (el.classList.contains("is-flipped")) return;
   el.classList.add("is-flipped");
 
+  playFlip();
+
   if (!first) {
     first = { card, el };
     return;
   }
 
-  if (first.card.id === card.id) return; // Evitar doble clic en la misma carta
+  if (first.card.id === card.id) return;
 
   second = { card, el };
   lock = true;
@@ -207,7 +239,7 @@ function onCardClick(card: Card, el: HTMLElement): void {
   triesEl.textContent = tries.toString();
 
   if (first.card.value === second.card.value) {
-    // ✅ Coincidencia
+    playMatch();
     first.card.matched = true;
     second.card.matched = true;
     first.el.classList.add("matched");
@@ -219,6 +251,7 @@ function onCardClick(card: Card, el: HTMLElement): void {
 
     if (matchedCount === cards.length) {
       stopTimer();
+      playWin();
       setTimeout(() => {
         const bonus = Math.max(0, remainingTime * 2);
         score = level.basePoints + bonus - tries * 5;
@@ -235,7 +268,6 @@ function onCardClick(card: Card, el: HTMLElement): void {
       }, 400);
     }
   } else {
-    // ❌ No coinciden
     setTimeout(() => {
       first?.el.classList.remove("is-flipped");
       second?.el.classList.remove("is-flipped");
@@ -247,7 +279,7 @@ function onCardClick(card: Card, el: HTMLElement): void {
 }
 
 // ------------------------------------------------------------
-// 🏆 Sistema de Ranking (LocalStorage)
+// 🏆 Ranking
 // ------------------------------------------------------------
 interface ScoreEntry {
   name: string;
@@ -273,10 +305,8 @@ function saveScore(points: number, tries: number, remainingTime: number, levelKe
   const ranking: ScoreEntry[] = stored ? JSON.parse(stored) : [];
   ranking.push(entry);
 
-  // Ordenar de mayor a menor puntaje
   ranking.sort((a, b) => b.points - a.points);
 
-  // Mantener solo los 5 mejores
   const topRanking = ranking.slice(0, 5);
   localStorage.setItem("cardMemoryRanking", JSON.stringify(topRanking));
 
@@ -296,7 +326,7 @@ function renderRanking(): void {
 }
 
 // ------------------------------------------------------------
-// 🔁 Eventos de UI
+// 🔁 Eventos
 // ------------------------------------------------------------
 restartBtn.addEventListener("click", resetGame);
 levelSelect.addEventListener("change", resetGame);

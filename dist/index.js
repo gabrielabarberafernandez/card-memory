@@ -1,16 +1,92 @@
 "use strict";
+const rankingList = document.getElementById("ranking-list");
 // ------------------------------------------------------------
 // 🎴 Juego de Memoria - Versión TypeScript
 // ------------------------------------------------------------
-var _a;
 // Elementos del DOM
 const boardEl = document.getElementById("board");
 const restartBtn = document.getElementById("restart");
 const triesEl = document.getElementById("tries");
 const timeEl = document.getElementById("time");
 const levelSelect = document.getElementById("level");
+const soundBtn = document.getElementById("sound-btn");
+const volumeSlider = document.getElementById("volume-slider");
+// Pantalla de inicio
+const startScreen = document.getElementById("start-screen");
+const startBtn = document.getElementById("start-btn");
+const gameSection = document.getElementById("game");
+// ------------------------------
+// 🎵 SONIDOS (rutas corregidas)
+// ------------------------------
+const flipSound = new Audio("./sounds/flip.mp3");
+const matchSound = new Audio("./sounds/match.mp3");
+const winSound = new Audio("./sounds/win.mp3");
+const bgMusic = new Audio("./sounds/bg.mp3");
+bgMusic.loop = true;
+let soundEnabled = true;
+// Evitar solapamientos
+flipSound.preload = "auto";
+matchSound.preload = "auto";
+winSound.preload = "auto";
+bgMusic.preload = "auto";
+// ------------------------------
+// Funciones de sonido
+// ------------------------------
+function playSound(sound) {
+    if (!soundEnabled)
+        return;
+    sound.currentTime = 0;
+    sound.play().catch(() => { });
+}
+function playFlip() {
+    playSound(flipSound);
+}
+function playMatch() {
+    playSound(matchSound);
+}
+function playWin() {
+    playSound(winSound);
+}
+// ------------------------------
+// Iniciar el juego desde la pantalla inicial
+// ------------------------------
+startBtn.addEventListener("click", () => {
+    startScreen.classList.add("hidden");
+    gameSection.classList.remove("hidden");
+    // 🔊 Solo reproducir música después de interacción del usuario
+    if (soundEnabled)
+        bgMusic.play().catch(() => { });
+});
+// ------------------------------
+// SONIDO ON/OFF
+// ------------------------------
+soundBtn.addEventListener("click", () => {
+    soundEnabled = !soundEnabled;
+    soundBtn.textContent = soundEnabled ? "🔊" : "🔇";
+    if (soundEnabled)
+        bgMusic.play().catch(() => { });
+    else
+        bgMusic.pause();
+});
+// ------------------------------
+// SLIDER DE VOLUMEN
+// ------------------------------
+volumeSlider.addEventListener("input", () => {
+    const v = Number(volumeSlider.value);
+    flipSound.volume = v;
+    matchSound.volume = v;
+    winSound.volume = v;
+    bgMusic.volume = v;
+});
+// Configuración de niveles
+const LEVELS = {
+    easy: { cards: 8, timeLimit: 120, basePoints: 100 },
+    medium: { cards: 12, timeLimit: 90, basePoints: 200 },
+    hard: { cards: 16, timeLimit: 60, basePoints: 300 },
+};
 // Variables de estado
-let level = parseInt((_a = levelSelect === null || levelSelect === void 0 ? void 0 : levelSelect.value) !== null && _a !== void 0 ? _a : "12", 10);
+let levelKey = (levelSelect === null || levelSelect === void 0 ? void 0 : levelSelect.value) || "medium";
+let level = LEVELS[levelKey];
 let cards = [];
 let first = null;
 let second = null;
@@ -19,7 +95,9 @@ let tries = 0;
 let matchedCount = 0;
 let timer = null;
 let startTime = null;
-// Lista de íconos (puedes cambiarlos por imágenes)
+let remainingTime = level.timeLimit;
+let score = 0;
+// Iconos
 const ICONS = [
     "♠", "♥", "♦", "♣", "★", "♪", "☼", "✿",
     "☺", "⚡", "☯", "✈︎", "⚽", "🍀", "🐱", "🐶"
@@ -38,9 +116,19 @@ function startTimer() {
         clearInterval(timer);
     startTime = Date.now();
     timer = window.setInterval(() => {
-        if (startTime)
-            timeEl.textContent = formatTime(Date.now() - startTime);
-    }, 250);
+        if (!startTime)
+            return;
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        remainingTime = level.timeLimit - elapsed;
+        if (remainingTime <= 0) {
+            stopTimer();
+            alert("⏰ ¡Se acabó el tiempo! Inténtalo de nuevo.");
+            resetGame();
+        }
+        else {
+            timeEl.textContent = formatTime(remainingTime * 1000);
+        }
+    }, 1000);
 }
 function stopTimer() {
     if (timer)
@@ -57,18 +145,21 @@ function shuffle(array) {
 // 🧠 Lógica principal del juego
 // ------------------------------------------------------------
 function resetGame() {
-    var _a;
     stopTimer();
     tries = 0;
     triesEl.textContent = tries.toString();
-    timeEl.textContent = "0:00";
+    timeEl.textContent = formatTime(level.timeLimit * 1000);
     first = null;
     second = null;
     lock = false;
     matchedCount = 0;
     boardEl.innerHTML = "";
-    level = parseInt((_a = levelSelect === null || levelSelect === void 0 ? void 0 : levelSelect.value) !== null && _a !== void 0 ? _a : "12", 10);
-    initBoard(level);
+    levelKey = levelSelect.value;
+    level = LEVELS[levelKey];
+    remainingTime = level.timeLimit;
+    score = 0;
+    initBoard(level.cards);
+    startTimer();
 }
 function initBoard(numCards) {
     const pairs = numCards / 2;
@@ -76,7 +167,6 @@ function initBoard(numCards) {
     const deck = [...chosen, ...chosen];
     shuffle(deck);
     cards = deck.map((val, idx) => ({ id: idx, value: val, matched: false }));
-    // Ajustar columnas según nivel
     boardEl.className = "board";
     const cols = numCards <= 8 ? 3 : numCards <= 12 ? 4 : 5;
     boardEl.classList.add(`board--cols-${cols}`);
@@ -101,18 +191,19 @@ function onCardClick(card, el) {
     if (el.classList.contains("is-flipped"))
         return;
     el.classList.add("is-flipped");
+    playFlip();
     if (!first) {
         first = { card, el };
         return;
     }
     if (first.card.id === card.id)
-        return; // Evitar doble clic en la misma carta
+        return;
     second = { card, el };
     lock = true;
     tries++;
     triesEl.textContent = tries.toString();
     if (first.card.value === second.card.value) {
-        // ✅ Coincidencia
+        playMatch();
         first.card.matched = true;
         second.card.matched = true;
         first.el.classList.add("matched");
@@ -123,13 +214,20 @@ function onCardClick(card, el) {
         lock = false;
         if (matchedCount === cards.length) {
             stopTimer();
+            playWin();
             setTimeout(() => {
-                alert(`🎉 ¡Ganaste! Intentos: ${tries}. Tiempo: ${timeEl.textContent}`);
+                const bonus = Math.max(0, remainingTime * 2);
+                score = level.basePoints + bonus - tries * 5;
+                alert(`🎉 ¡Ganaste!\n` +
+                    `Nivel: ${levelKey.toUpperCase()}\n` +
+                    `Intentos: ${tries}\n` +
+                    `Tiempo restante: ${remainingTime}s\n` +
+                    `Puntuación: ${score}`);
+                saveScore(score, tries, remainingTime, levelKey);
             }, 400);
         }
     }
     else {
-        // ❌ No coinciden
         setTimeout(() => {
             first === null || first === void 0 ? void 0 : first.el.classList.remove("is-flipped");
             second === null || second === void 0 ? void 0 : second.el.classList.remove("is-flipped");
@@ -139,12 +237,38 @@ function onCardClick(card, el) {
         }, 900);
     }
 }
+function saveScore(points, tries, remainingTime, levelKey) {
+    const name = prompt("🎮 Ingresa tu nombre para el ranking:") || "Jugador";
+    const entry = {
+        name,
+        level: levelKey,
+        points,
+        tries,
+        time: remainingTime,
+        date: new Date().toLocaleDateString(),
+    };
+    const stored = localStorage.getItem("cardMemoryRanking");
+    const ranking = stored ? JSON.parse(stored) : [];
+    ranking.push(entry);
+    ranking.sort((a, b) => b.points - a.points);
+    const topRanking = ranking.slice(0, 5);
+    localStorage.setItem("cardMemoryRanking", JSON.stringify(topRanking));
+    renderRanking();
+}
+function renderRanking() {
+    const stored = localStorage.getItem("cardMemoryRanking");
+    const ranking = stored ? JSON.parse(stored) : [];
+    rankingList.innerHTML = ranking
+        .map((r, i) => `<li><strong>${i + 1}.</strong> 🏅 ${r.name} — <span class="score">${r.points} pts</span> (${r.level}, ${r.tries} intentos, ${r.time}s restantes)</li>`)
+        .join("");
+}
 // ------------------------------------------------------------
-// 🔁 Eventos de UI
+// 🔁 Eventos
 // ------------------------------------------------------------
 restartBtn.addEventListener("click", resetGame);
 levelSelect.addEventListener("change", resetGame);
 // ------------------------------------------------------------
 // 🏁 Inicialización
 // ------------------------------------------------------------
+renderRanking();
 resetGame();

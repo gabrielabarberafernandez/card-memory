@@ -29,7 +29,10 @@
         <p>Intentos: <span id="tries">0</span></p>
         <p>Tiempo: <span id="time">0:00</span></p>
         <button id="restart">🔁 Reiniciar</button>
-        <button id="sound-btn" class="sound-btn">🔊</button>
+        <div class="sound-controls">
+          <button id="sound-btn">🔊</button>
+          <input id="volume-slider" type="range" min="0" max="1" step="0.01" value="1">
+        </div>
       </div>
 
       <div id="board" class="board"></div>
