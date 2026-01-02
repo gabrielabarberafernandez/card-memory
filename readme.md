@@ -5,6 +5,11 @@ Un pequeño **juego de memoria** hecho con **TypeScript**, **HTML** y **CSS**, d
 El objetivo del juego es encontrar todas las **parejas de cartas iguales** en el menor número de intentos y tiempo posible ⏱️.
 
 ---
+## 🎮 Live Demo
+
+🔗 [Ver demo del juego](https://gabrielabarberafernandez.github.io/card-memory/)
+
+---
 
 ## 🧠 Características
 
